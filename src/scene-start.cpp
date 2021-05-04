@@ -1,6 +1,6 @@
 
 #include "Angel.h"
-
+// ModelView
 // Open Asset Importer header files (in ../../assimp--3.0.1270/include)
 // This is a standard open source library for loading meshes, see gnatidread.h
 #include <assimp/cimport.h>
@@ -16,6 +16,8 @@
 #include <filesystem>
 #define EXISTS std::filesystem::exists
 #endif
+
+// WEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE!
 
 GLint windowHeight = 640, windowWidth = 960;
 
@@ -52,7 +54,7 @@ GLuint vaoIDs[numMeshes]; // and a corresponding VAO ID from glGenVertexArrays
 
 // -----Textures--------------------------------------------------------------
 //                           (numTextures is defined in gnatidread.h)
-texture *textures[numTextures]; // An array of texture pointers - see gnatidread.h
+texture *textures[numTextures]; // An array of texture pointers - see gnatidread.hd
 GLuint textureIDs[numTextures]; // Stores the IDs returned by glGenTextures
 
 //------Scene Objects---------------------------------------------------------
@@ -352,6 +354,23 @@ void init(void) {
 
 //----------------------------------------------------------------------------
 
+/*
+Similarly, changing the location and scale of objects is already implemented,
+via the loc and scale members of the SceneObject structure, which is stored in
+the variable sceneObjs for each object in the scene.
+
+However, the angles array
+in this structure doesn't affect what's drawn, even though it is appropriately
+set to contain the rotations around the X, Y and Z axes, in degrees.
+
+Modify the
+drawMesh function so that it appropriately rotates the object when drawing it
+in the same way as the sample solution.
+
+Note: The skeleton code also moves objects in different directions compared to
+the sample solution -- you should also fix this (Hint: there is more than one
+way to do this).
+*/
 void drawMesh(SceneObject sceneObj) {
 
     // Activate a texture, loading if needed.
@@ -373,7 +392,12 @@ void drawMesh(SceneObject sceneObj) {
     // Set the model matrix - this should combine translation, rotation and scaling based on what's
     // in the sceneObj structure (see near the top of the program).
 
-    mat4 model = Translate(sceneObj.loc) * Scale(sceneObj.scale);
+    // B - here
+    // mat4 rotate = RotateX(sceneObj.angles[0]) * RotateY(sceneObj.angles[1]) * RotateZ(sceneObj.angles[2]);
+    mat4 rotate = RotateZ(sceneObj.angles[2]) *  RotateY(sceneObj.angles[1]) * RotateX(sceneObj.angles[0]);
+    mat4 model = Translate(sceneObj.loc) * Scale(sceneObj.scale) * rotate;
+    // adjustScaleY(sceneObj.scale)
+    // mat4 model = Translate(sceneObj.loc) * Scale(sceneObj.scale); // OG
 
 
     // Set the model-view matrix for the shaders
@@ -402,17 +426,9 @@ void display(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     CheckError(); // May report a harmless GL_INVALID_OPERATION with GLEW on the first frame
 
-    // Set the view matrix. To start with this just moves the camera
-    // backwards.  You'll need to add appropriate rotations.
-
-    // mouseClickOrScroll(int button, int state, int x, int y);
-    // view = mouseClickOrScroll(int button, int state, int x, int y); // somehow
-
-    view = Translate(0.0, 0.0, -viewDist);
-    /*
-    if motion of draging mouse is left then rotate about y axis clockwise
-    */
-
+    // combine the rotations into a single rotation matrix: "rotate" and then apply "rotate" to the world frame:
+    mat4 rotate = RotateY(camRotSidewaysDeg) * RotateX(camRotUpAndOverDeg);
+    view = Translate(0.0, 0.0, -viewDist) * rotate;
 
     SceneObject lightObj1 = sceneObjs[1];
     vec4 lightPosition = view * lightObj1.loc;
